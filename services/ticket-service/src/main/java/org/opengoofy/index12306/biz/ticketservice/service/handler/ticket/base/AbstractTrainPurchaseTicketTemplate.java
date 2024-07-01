@@ -38,7 +38,6 @@ import static org.opengoofy.index12306.biz.ticketservice.common.constant.RedisKe
 /**
  * 抽象高铁购票模板基础服务
  *
-
  */
 public abstract class AbstractTrainPurchaseTicketTemplate implements IPurchaseTicket, CommandLineRunner, AbstractExecuteStrategy<SelectSeatDTO, List<TrainPurchaseTicketRespDTO>> {
 

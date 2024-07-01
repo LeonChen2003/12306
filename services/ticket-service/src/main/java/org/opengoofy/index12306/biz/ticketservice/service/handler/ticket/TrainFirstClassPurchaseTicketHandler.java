@@ -48,7 +48,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * 高铁一等座购票组件
  *
-
  */
 @Component
 @RequiredArgsConstructor

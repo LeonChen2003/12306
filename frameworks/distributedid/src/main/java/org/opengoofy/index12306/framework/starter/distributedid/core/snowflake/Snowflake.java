@@ -53,13 +53,17 @@ public class Snowflake implements Serializable, IdGenerator {
 
   private static final long serialVersionUID = 1L;
   private static final long WORKER_ID_BITS = 5L;
+
   // 最大支持机器节点数0~31，一共32个
   @SuppressWarnings({"PointlessBitwiseExpression", "FieldCanBeLocal"})
   private static final long MAX_WORKER_ID = -1L ^ (-1L << WORKER_ID_BITS);
+
   private static final long DATA_CENTER_ID_BITS = 5L;
+
   // 最大支持数据中心节点数0~31，一共32个
   @SuppressWarnings({"PointlessBitwiseExpression", "FieldCanBeLocal"})
   private static final long MAX_DATA_CENTER_ID = -1L ^ (-1L << DATA_CENTER_ID_BITS);
+
   // 序列号12位（表示只允许workId的范围为：0-4095）
   private static final long SEQUENCE_BITS = 12L;
   // 机器节点左移12位
@@ -71,10 +75,13 @@ public class Snowflake implements Serializable, IdGenerator {
       SEQUENCE_BITS + WORKER_ID_BITS + DATA_CENTER_ID_BITS;
   // 序列掩码，用于限定序列最大值不能超过4095
   private static final long SEQUENCE_MASK = ~(-1L << SEQUENCE_BITS);
+
   /** 默认的起始时间，为Thu, 04 Nov 2010 01:42:54 GMT */
   private static long DEFAULT_TWEPOCH = 1288834974657L;
+
   /** 默认回拨时间，2S */
   private static long DEFAULT_TIME_OFFSET = 2000L;
+
   /** 初始化时间点 */
   private final long twepoch;
 

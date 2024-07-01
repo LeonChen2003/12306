@@ -17,10 +17,16 @@
 
 package org.opengoofy.index12306.biz.ticketservice.service.handler.ticket.filter.query;
 
+import static org.opengoofy.index12306.biz.ticketservice.common.constant.RedisKeyConstant.LOCK_QUERY_ALL_REGION_LIST;
+import static org.opengoofy.index12306.biz.ticketservice.common.constant.RedisKeyConstant.QUERY_ALL_REGION_LIST;
+
 import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.google.common.collect.Maps;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.opengoofy.index12306.biz.ticketservice.dao.entity.RegionDO;
 import org.opengoofy.index12306.biz.ticketservice.dao.entity.StationDO;
@@ -35,85 +41,83 @@ import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Objects;
-
-import static org.opengoofy.index12306.biz.ticketservice.common.constant.RedisKeyConstant.LOCK_QUERY_ALL_REGION_LIST;
-import static org.opengoofy.index12306.biz.ticketservice.common.constant.RedisKeyConstant.QUERY_ALL_REGION_LIST;
-
-/**
- * 查询列车车票流程过滤器之验证数据是否正确
- *
-
- */
+/** 查询列车车票流程过滤器之验证数据是否正确 */
 @Component
 @RequiredArgsConstructor
-public class TrainTicketQueryParamVerifyChainFilter implements TrainTicketQueryChainFilter<TicketPageQueryReqDTO> {
+public class TrainTicketQueryParamVerifyChainFilter
+    implements TrainTicketQueryChainFilter<TicketPageQueryReqDTO> {
 
-    private final RegionMapper regionMapper;
-    private final StationMapper stationMapper;
-    private final DistributedCache distributedCache;
-    private final RedissonClient redissonClient;
+  private final RegionMapper regionMapper;
+  private final StationMapper stationMapper;
+  private final DistributedCache distributedCache;
+  private final RedissonClient redissonClient;
 
-    /**
-     * 缓存数据为空并且已经加载过标识
-     */
-    private static boolean CACHE_DATA_ISNULL_AND_LOAD_FLAG = false;
+  /** 缓存数据为空并且已经加载过标识 */
+  private static boolean CACHE_DATA_ISNULL_AND_LOAD_FLAG = false;
 
-    @Override
-    public void handler(TicketPageQueryReqDTO requestParam) {
-        StringRedisTemplate stringRedisTemplate = (StringRedisTemplate) distributedCache.getInstance();
-        HashOperations<String, Object, Object> hashOperations = stringRedisTemplate.opsForHash();
-        List<Object> actualExistList = hashOperations.multiGet(
+  @Override
+  public void handler(TicketPageQueryReqDTO requestParam) {
+    StringRedisTemplate stringRedisTemplate = (StringRedisTemplate) distributedCache.getInstance();
+    HashOperations<String, Object, Object> hashOperations = stringRedisTemplate.opsForHash();
+    List<Object> actualExistList =
+        hashOperations.multiGet(
+            QUERY_ALL_REGION_LIST,
+            ListUtil.toList(requestParam.getFromStation(), requestParam.getToStation()));
+    long emptyCount = actualExistList.stream().filter(Objects::isNull).count();
+    if (emptyCount == 0L) {
+      return;
+    }
+    if (emptyCount == 1L
+        || (emptyCount == 2L
+            && CACHE_DATA_ISNULL_AND_LOAD_FLAG
+            && distributedCache.hasKey(QUERY_ALL_REGION_LIST))) {
+      throw new ClientException("出发地或目的地不存在");
+    }
+    RLock lock = redissonClient.getLock(LOCK_QUERY_ALL_REGION_LIST);
+    lock.lock();
+    try {
+      if (distributedCache.hasKey(QUERY_ALL_REGION_LIST)) {
+        actualExistList =
+            hashOperations.multiGet(
                 QUERY_ALL_REGION_LIST,
-                ListUtil.toList(requestParam.getFromStation(), requestParam.getToStation())
-        );
-        long emptyCount = actualExistList.stream().filter(Objects::isNull).count();
-        if (emptyCount == 0L) {
-            return;
+                ListUtil.toList(requestParam.getFromStation(), requestParam.getToStation()));
+        emptyCount = actualExistList.stream().filter(Objects::nonNull).count();
+        if (emptyCount != 2L) {
+          throw new ClientException("出发地或目的地不存在");
         }
-        if (emptyCount == 1L || (emptyCount == 2L && CACHE_DATA_ISNULL_AND_LOAD_FLAG && distributedCache.hasKey(QUERY_ALL_REGION_LIST))) {
-            throw new ClientException("出发地或目的地不存在");
-        }
-        RLock lock = redissonClient.getLock(LOCK_QUERY_ALL_REGION_LIST);
-        lock.lock();
-        try {
-            if (distributedCache.hasKey(QUERY_ALL_REGION_LIST)) {
-                actualExistList = hashOperations.multiGet(
-                        QUERY_ALL_REGION_LIST,
-                        ListUtil.toList(requestParam.getFromStation(), requestParam.getToStation())
-                );
-                emptyCount = actualExistList.stream().filter(Objects::nonNull).count();
-                if (emptyCount != 2L) {
-                    throw new ClientException("出发地或目的地不存在");
-                }
-                return;
-            }
-            List<RegionDO> regionDOList = regionMapper.selectList(Wrappers.emptyWrapper());
-            List<StationDO> stationDOList = stationMapper.selectList(Wrappers.emptyWrapper());
-            HashMap<Object, Object> regionValueMap = Maps.newHashMap();
-            for (RegionDO each : regionDOList) {
-                regionValueMap.put(each.getCode(), each.getName());
-            }
-            for (StationDO each : stationDOList) {
-                regionValueMap.put(each.getCode(), each.getName());
-            }
-            hashOperations.putAll(QUERY_ALL_REGION_LIST, regionValueMap);
-            CACHE_DATA_ISNULL_AND_LOAD_FLAG = true;
-            emptyCount = regionValueMap.keySet().stream()
-                    .filter(each -> StrUtil.equalsAny(each.toString(), requestParam.getFromStation(), requestParam.getToStation()))
-                    .count();
-            if (emptyCount != 2L) {
-                throw new ClientException("出发地或目的地不存在");
-            }
-        } finally {
-            lock.unlock();
-        }
+        return;
+      }
+      // 缓存不存在则查询数据库
+      List<RegionDO> regionDOList = regionMapper.selectList(Wrappers.emptyWrapper());
+      List<StationDO> stationDOList = stationMapper.selectList(Wrappers.emptyWrapper());
+      HashMap<Object, Object> regionValueMap = Maps.newHashMap();
+      for (RegionDO each : regionDOList) {
+        regionValueMap.put(each.getCode(), each.getName());
+      }
+      for (StationDO each : stationDOList) {
+        regionValueMap.put(each.getCode(), each.getName());
+      }
+      hashOperations.putAll(QUERY_ALL_REGION_LIST, regionValueMap);
+      CACHE_DATA_ISNULL_AND_LOAD_FLAG = true;
+      emptyCount =
+          regionValueMap.keySet().stream()
+              .filter(
+                  each ->
+                      StrUtil.equalsAny(
+                          each.toString(),
+                          requestParam.getFromStation(),
+                          requestParam.getToStation()))
+              .count();
+      if (emptyCount != 2L) {
+        throw new ClientException("出发地或目的地不存在");
+      }
+    } finally {
+      lock.unlock();
     }
+  }
 
-    @Override
-    public int getOrder() {
-        return 20;
-    }
+  @Override
+  public int getOrder() {
+    return 20;
+  }
 }

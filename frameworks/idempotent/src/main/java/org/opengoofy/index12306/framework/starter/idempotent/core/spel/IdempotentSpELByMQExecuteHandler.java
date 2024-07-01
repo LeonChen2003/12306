@@ -20,6 +20,7 @@ package org.opengoofy.index12306.framework.starter.idempotent.core.spel;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.opengoofy.index12306.framework.starter.cache.DistributedCache;

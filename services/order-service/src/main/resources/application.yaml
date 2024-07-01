@@ -10,7 +10,7 @@ spring:
   cloud:
     nacos:
       discovery:
-        server-addr: 192.168.174.128:8848
+        server-addr: 192.168.174.130:8848
       password: nacos
       username: nacos
     sentinel:
@@ -19,7 +19,7 @@ spring:
         port: 8719
   data:
     redis:
-      host: 192.168.174.128
+      host: 192.168.174.130
       port: 6379
       password: 123456
 
@@ -42,7 +42,7 @@ framework:
       value-time-unit: days
 
 rocketmq:
-  name-server: 192.168.174.128:9876
+  name-server: 192.168.174.130:9876
   producer:
     group: index12306_order${unique-name:}-service_common-message-execute_pg
     send-message-timeout: 2000
