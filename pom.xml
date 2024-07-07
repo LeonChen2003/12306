@@ -7,10 +7,6 @@
     <version>0.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <description>
-        🔥热门推荐🔥大学春招、秋招、应届项目，SpringBoot3+Java17+SpringCloudAlibaba+RocketMQ等技术架构，完成铁路12306用户+购票+订单+支付服务，帮助学生主打就业的项目。
-    </description>
-
     <properties>
         <java.version>17</java.version>
         <spotless-maven-plugin.version>2.22.1</spotless-maven-plugin.version>
@@ -25,7 +21,6 @@
         <module>dependencies</module>
         <module>frameworks</module>
         <module>services</module>
-        <module>tests</module>
     </modules>
 
     <dependencies>
@@ -98,6 +93,7 @@
                         </eclipse>-->
                         <licenseHeader>
                             <!-- ${maven.multiModuleProjectDirectory} 爆红属于正常，并不影响编译或者运行，忽略就好 -->
+                            <!--suppress UnresolvedMavenProperty -->
                             <file>${maven.multiModuleProjectDirectory}/format/license-header</file>
                         </licenseHeader>
                     </java>
@@ -118,9 +114,11 @@
                 <version>${maven-common-plugin.version}</version>
                 <configuration>
                     <!-- ${maven.multiModuleProjectDirectory} 爆红属于正常，并不影响编译或者运行，忽略就好 -->
+                    <!--suppress UnresolvedMavenProperty -->
                     <configLocation>${maven.multiModuleProjectDirectory}/checkstyle/12306_checkstyle.xml
                     </configLocation>
                     <!-- ${maven.multiModuleProjectDirectory} 爆红属于正常，并不影响编译或者运行，忽略就好 -->
+                    <!--suppress UnresolvedMavenProperty -->
                     <suppressionsLocation>
                         ${maven.multiModuleProjectDirectory}/checkstyle/12306_checkstyle_suppression.xml
                     </suppressionsLocation>
