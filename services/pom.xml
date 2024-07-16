@@ -11,6 +11,10 @@
     <artifactId>index12306-services</artifactId>
     <packaging>pom</packaging>
 
+    <properties>
+        <monitor.version>0.0.1-SNAPSHOT</monitor.version>
+    </properties>
+
     <modules>
         <module>gateway-service</module>
         <module>order-service</module>
@@ -21,13 +25,15 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-actuator</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-registry-prometheus</artifactId>
+            <groupId>org.opengoofy.index12306</groupId>
+            <artifactId>index12306-monitor</artifactId>
+            <version>${monitor.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-web</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 </project>
